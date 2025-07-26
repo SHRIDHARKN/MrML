@@ -8,6 +8,9 @@ from PIL import Image
 import torch
 from torch.utils.data import DataLoader, Dataset
 
+import random
+import string
+from termcolor import colored
 
 def show_blue_msg(msg):
     print(f"[blue]{msg}[/blue]")
@@ -130,3 +133,32 @@ def get_img_dataloader(data_dir, img_height, img_width, batch_size, debug=False,
 
     print(f"✅ img_loader is ready")
     return img_loader
+
+
+def generate_id(length=20):
+    """Generate a random alphanumeric ID of specified length."""
+    alpha_num = string.ascii_letters+string.digits
+    _id = "".join(random.choice(alpha_num) for _ in range(length))
+    return _id.lower()
+
+
+# def log_msg(msg, msg_typ="normal", font_color="white", bg_color="green", header="", sep = "="):
+    
+#     # msg = " \u039B | " +" "*2+ msg +" "*10
+    
+#     if msg_typ == "progress":
+#         print(colored(sep * 10 + " INFO " + sep * 10, 'black', 'on_white', attrs=['bold'])) 
+#         print(colored(msg, 'black', 'on_white', attrs=['bold']))   
+#     elif msg_typ == "data":
+#         print(colored(sep * 10 + " DATA/ VARS / CONFIG " + sep * 10, 'black', 'on_white', attrs=['bold'])) 
+#         print(colored(msg, 'white', 'on_blue', attrs=['bold']))
+#     elif msg_typ == "normal":
+#         print(colored(sep * 10 + " PROGRESS/ SAVES " + sep * 10, 'black', 'on_white', attrs=['bold'])) 
+#         print(colored(msg, 'white', 'on_green', attrs=['bold']))
+#     else:
+#         print(colored(sep * 10 + header + sep * 10, 'black', 'on_white', attrs=['bold'])) 
+#         print(colored(msg, font_color, f'on_{bg_color}', attrs=['bold']))
+#     print(colored(sep * 50+"\n", 'black', 'on_white', attrs=['bold'])) 
+
+def log_msg(msg, font_color="black", bg_color="white"):
+    print(colored(msg, font_color, f'on_{bg_color}', attrs=['bold']))
