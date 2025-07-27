@@ -11,8 +11,8 @@ def load_img_2_text_hf_pipe(model_name = "Salesforce/blip-image-captioning-large
 
     pipe = pipeline("image-to-text", model=model_name, model_kwargs={"cache_dir": cache_dir})
     log_msg(msg="Loading image-to-text pipeline")
-    print(f"Model name: {model_name}")
-    print(f"Cache directory: {cache_dir}")
+    log_msg(f"Model name: {model_name}")
+    log_msg(f"Cache directory: {cache_dir}")
     log_msg("Pipeline loaded successfully")
     return pipe
     
