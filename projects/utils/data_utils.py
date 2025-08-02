@@ -12,6 +12,9 @@ import random
 import string
 from termcolor import colored
 
+import pandas as pd
+import numpy as np
+
 def show_blue_msg(msg):
     print(f"[blue]{msg}[/blue]")
 
@@ -118,6 +121,43 @@ class SingleClassImageDataset(Dataset):
         img = Image.open(img_path).convert("RGB")
         img = self.transform(img)
         return img
+
+
+class ImageTextEmbeddingDataset(Dataset):
+    def __init__(self, csv_file: str, transform=None):
+        
+        self.data_frame = pd.read_csv(csv_file)
+        self.transform = transform
+        # self.data_frame['text_embed'] = self.data_frame['text_embed'].apply(parse_embed)
+
+    def __len__(self):
+        return len(self.data_frame)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        row = self.data_frame.iloc[idx]
+        img_full_path = row['full_paths']
+        image = Image.open(img_full_path).convert('RGB')
+        
+        if self.transform:
+            image = self.transform(image)
+
+        description_text = row['text']
+        text_embedding = self.parse_embed(row['text_embed'])
+        text_embedding = torch.tensor(text_embedding, dtype=torch.float32)
+        return {
+            'image': image,
+            'text_embedding': text_embedding,
+            'description_text': description_text,
+            'img_full_path': img_full_path
+        }
+
+    def parse_embed(self,embed_str):
+        embed_clean = embed_str.strip("[]")
+        return np.fromstring(embed_clean, sep=' ')
+    
 
 def get_img_dataloader(data_dir, img_height, img_width, batch_size, debug=False, help=False):
     if help:

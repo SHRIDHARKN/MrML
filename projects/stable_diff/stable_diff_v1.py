@@ -10,7 +10,7 @@ class Block(nn.Module):
         
         super(Block, self).__init__()
         
-        self.img_conv = nn.Conv2d(in_channels, out_channels, kernel_size, padding=1)
+        self.img_conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=1)
         self.time_dense = nn.Sequential(
             nn.Linear(in_features=time_in_feat, out_features=time_out_feat),
             nn.LayerNorm(img_size),
@@ -42,7 +42,8 @@ class DiffusionModel(nn.Module):
         self.time_embed_dim = time_embed_dim
         self.half_img_size = self.img_size//2
         self.quarter_img_size = self.img_size//4
-        self.final_decoder_channels = self.img_size*self.img_channels
+        self.final_decoder_channels = self.half_img_size*self.img_channels
+        self.TimeEmbeddings = nn.Linear(in_features=1,out_features=self.time_embed_dim)
         self.EncoderBlock1 = Block(in_channels=self.img_channels,
                                    out_channels=self.img_size,
                                    img_size=self.img_size,
@@ -53,7 +54,7 @@ class DiffusionModel(nn.Module):
                                    text_out_feat=self.img_size
                                    )
         
-        self.EncoderBlock2 = Block(in_channels=self.img_channels,
+        self.EncoderBlock2 = Block(in_channels=self.img_size,
                                    out_channels=self.half_img_size,
                                    img_size=self.half_img_size,
                                    kernel_size=3,
@@ -95,10 +96,13 @@ class DiffusionModel(nn.Module):
                                     text_in_feat=self.text_embed_dim, 
                                     text_out_feat=self.img_size
                                 )
+        
+        self.conv_op = nn.Conv2d(self.img_size,self.img_channels,kernel_size=1)
 
         
+    def forward(self, img_inp, time_info, text_inp):
         
-    def forward(self, img_inp, time_inp, text_inp):
+        time_inp = self.TimeEmbeddings(time_info)   # shape: (24, 64)
         
         x_l = self.EncoderBlock1(img=img_inp, 
                                 time_feat=time_inp, 
@@ -106,26 +110,20 @@ class DiffusionModel(nn.Module):
                                 )
         
         x = F.max_pool2d(x_l,2)
-        
         x_m = self.EncoderBlock2(img=x,
                                  time_feat=time_inp,
                                  text_feat=text_inp)
         
         x = F.max_pool2d(x_m,2)
-        
         x_flat = nn.Flatten()(x)
         x_concat = torch.cat([x_flat, time_inp], dim=1)
-        
         x = self.BottleNeck(x_concat)
         x = x.view(-1, self.half_img_size, self.half_img_size, self.half_img_size)
         x = torch.cat([x, x_m], dim=1)
-        
         x = self.DecoderBlock2(img=x, time_feat=time_inp, text_feat=text_inp)
         x = F.interpolate(x, scale_factor=2, mode="nearest")
         x = torch.cat([x, x_l], dim=1)
-        
         x = self.DecoderBlock1(img=x, time_feat=time_inp, text_feat=text_inp)
-        
-        out = nn.Conv2d(self.img_size,self.img_channels,kernel_size=1)(x)
+        out = self.conv_op(x)
         
         return out
