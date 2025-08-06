@@ -1,6 +1,6 @@
 import sys
 sys.path.append("/home/voldemort/data_science/projects/dsml/MrML/projects")
-from stable_diff_v1 import DiffusionModel
+from MrML.projects.stable_diff.stable_diff_v1 import DiffusionModel
 from torchvision import transforms
 import torch
 import torch.nn as nn
@@ -16,13 +16,14 @@ def get_img_pairs(imgs,noise_levels):
     img_a_ls = []
     img_b_ls = []
     time_ls = []
-    #noise = torch.rand_like(imgs[0])
     noise = torch.rand_like(imgs[0])
 
     for img in imgs:
         for i in range(len(noise_levels)-1):
-            img_a = img + noise*noise_levels[i]
-            img_b = img + noise*noise_levels[i+1]
+            alpha = noise_levels[i]
+            beta = noise_levels[i+1]
+            img_a = img*(1-alpha) + noise*alpha
+            img_b = img*(1-beta)+ noise*beta
             img_a_ls.append(img_a)
             img_b_ls.append(img_b)
             time_ls.append(float(i))
@@ -59,16 +60,16 @@ def start_training(image_text_loader,diffusion_model,optimizer, device ,loss_fn,
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
-img_size = 128
+img_size = 64
 img_channels = 3
 text_embed_dim=384
 time_embed_dim=img_size
 batch_size = 4
-lr=1e-4
+lr=2e-4
 weight_decay=0.001
 timesteps = 4
 noise_levels = torch.linspace(1,0,timesteps+1)
-n_epochs=100
+n_epochs=1000
 
 data_path = "/mnt/g/dev/data/alea/kqk08n2j47clcyyky3jq/txt_embed/image_descriptions.csv"
 
@@ -92,9 +93,26 @@ diffusion_model = DiffusionModel(img_channels=img_channels,
                                  time_embed_dim=time_embed_dim
                                  )
 
+# use checkpoint if available
+#opt_checkpoint_path,model_checkpoint_path = None, None
+model_checkpoint_path = "/mnt/g/dev/model/diffusion_model/en5rmf6gzfiqo7xfye8z/model/alea_diffusion_model.pth"
+opt_checkpoint_path = "/mnt/g/dev/model/diffusion_model/en5rmf6gzfiqo7xfye8z/opt/alea_diffusion_opt.pth"
+
+if model_checkpoint_path:
+    print(f"Loading model checkpoint - {model_checkpoint_path}")
+    diffusion_model.load_state_dict(torch.load(model_checkpoint_path))
+    print("Checkpoint loaded")
+
 diffusion_model.to(device)
 # Optimizer and Loss
 optimizer = torch.optim.Adam(diffusion_model.parameters(), lr=lr, weight_decay=weight_decay)
+
+ 
+if opt_checkpoint_path:
+    optimizer.load_state_dict(torch.load(opt_checkpoint_path))
+    print("Opt state loaded from checkpoint")
+
+
 loss_fn = nn.MSELoss()
 
 # train model
