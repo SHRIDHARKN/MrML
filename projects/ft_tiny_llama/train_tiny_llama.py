@@ -7,7 +7,7 @@ from utils.params import LANGUAGE_MODELING_TASK
 from torch.utils.data import Dataset, DataLoader
 import os
 import pandas as pd
-from peft import LoraConfig, get_peft_model
+from peft import LoraConfig, get_peft_model, PeftModel
 import torch
 from tqdm.auto import tqdm
 import numpy as np
@@ -70,8 +70,9 @@ batch_size=2
 lr = 2e-3
 num_epochs = 2
 weight_decay = 0.001
-debug = False
+debug = True
 max_steps = 10
+#is_peft_model = True
 max_steps = max_steps if debug else np.inf
 device = get_device()
 tokenizer, model, model_tag = load_pretrained_model(model_name=model_name, 
@@ -119,7 +120,7 @@ progress_bar = tqdm(range(len(train_dataloader) * num_epochs))
 checkpoint_save_epochs = 1
 checkpoint_dir = f"/mnt/g/dev/model/ft_tiny_llama/{generate_id()}"
 os.makedirs(checkpoint_dir, exist_ok=True)
-
+is_peft_model = isinstance(model, PeftModel)
 global_step = 0
 for epoch in range(num_epochs):
     for batch in train_dataloader:
@@ -138,7 +139,8 @@ for epoch in range(num_epochs):
     # torch.save({
     #         'model_state_dict': model.state_dict()},checkpoint_dir)
             
-    save_checkpoint(epoch=epoch, checkpoint_save_epochs=1, 
+    save_checkpoint(is_peft_model=is_peft_model,
+                    epoch=epoch, checkpoint_save_epochs=1, 
                     checkpoint_dir=checkpoint_dir,
                     model=model, optimizer=optimizer, 
                     scheduler=None, avg_epoch_loss=loss,

@@ -63,7 +63,7 @@ def save_df_in_parts(df, records_per_file, data_tag):
 #         print("=== Model and tokenizer loaded successfully ===")
 #         return tokenizer, model, model_tag
 
-def save_checkpoint(epoch, checkpoint_dir, avg_epoch_loss,
+def save_checkpoint(is_peft_model,epoch, checkpoint_dir, avg_epoch_loss,
                     model, optimizer=None, scheduler=None, 
                     global_step=None, model_name=None, lr=None, 
                     weight_decay=None, batch_size=None, num_epochs=None,
@@ -72,11 +72,19 @@ def save_checkpoint(epoch, checkpoint_dir, avg_epoch_loss,
                     checkpoint_save_epochs=1):
     
     if (epoch + 1) % checkpoint_save_epochs == 0:
-        checkpoint_path = os.path.join(checkpoint_dir, f"checkpoint_epoch_{epoch+1}.pt")
+        os.makedirs(os.path.join(checkpoint_dir,f"checkpoint_epoch_{epoch+1}"), exist_ok=True)
+        checkpoint_path = os.path.join(checkpoint_dir, f"checkpoint_epoch_{epoch+1}/checkpoint.pt")
         # Save both model state_dict and optimizer/scheduler states for full resume capability
+        if is_peft_model:
+            os.makedirs(os.path.join(checkpoint_dir,f"adapter_epoch_{epoch+1}"), exist_ok=True)
+            print(">> PEFT Model >> Adapter will be saved.")
+            adapter_path = os.path.join(checkpoint_dir, f"adapter_epoch_{epoch+1}")
+            model.save_pretrained(save_directory=adapter_path)
+            print(f">> Adapter saved @ {adapter_path}")
+            
         torch.save({
             'epoch': epoch,
-            'model_state_dict': model.state_dict(),
+            'model_state_dict': None if is_peft_model else model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict() if optimizer else None,
             'scheduler_state_dict': scheduler.state_dict() if scheduler else None,
             'loss': avg_epoch_loss,
