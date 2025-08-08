@@ -62,7 +62,7 @@ val_dataloader = DataLoader(
                                 tokenizer=tokenizer)
                         )
 
-adapter_path = "/mnt/g/dev/model/ft_tiny_llama/gdobilerxxpnc5h90rha/adapter_epoch_2"
+adapter_path = "/mnt/g/dev/model/ft_tiny_llama/mqlo9gf6yibb2kmvbj52/adapter_epoch_3"
 model = PeftModel.from_pretrained(model, adapter_path)
 # This step is optional but recommended for deployment.
 model = model.merge_and_unload() 

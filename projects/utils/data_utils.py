@@ -207,7 +207,7 @@ class CSVDataset(Dataset):
     def __init__(self, root_dir):
         
         self.root_dir = root_dir
-        self.csv_files = [f for f in os.listdir(root_dir) if f.endswith('.csv')][:1]
+        self.csv_files = [f for f in os.listdir(root_dir) if f.endswith('.csv')]
         self.all_data = []
         self._load_metadata()
         self.num_files = len(self.csv_files)
