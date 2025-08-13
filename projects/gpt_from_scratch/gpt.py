@@ -1,0 +1,23 @@
+from tokenizer import tokenizer
+from positional_encoding import PositionalEncoding
+import torch.nn as nn
+import torch
+
+class GPT(nn.Module):
+    def __init__(self, tokenizer, d_model=64, max_len=256):
+        super(GPT, self).__init__()
+        self.random = torch.manual_seed(0)
+        self.tokenizer = tokenizer
+        self.d_model = d_model
+        self.max_len = max_len
+        self.positional_encoder = PositionalEncoding(d_model=self.d_model, max_len=self.max_len)
+        self.embedding_layer = nn.Embedding(self.tokenizer.n_vocab, self.d_model)
+        self.pad_token_id = self.tokenizer.encode("####")
+        
+    def forward(self, x):
+        x = self.tokenizer.encode(x)
+        x = x + self.pad_token_id * (self.max_len - len(x))
+        x = torch.tensor(x).unsqueeze(0)
+        x = self.embedding_layer(x)
+        x = self.positional_encoder(x)
+        return x
