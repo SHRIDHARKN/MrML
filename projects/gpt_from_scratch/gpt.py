@@ -24,9 +24,11 @@ class GPT(nn.Module):
         self.decoder_blocks = nn.ModuleList([self.attention_head for _ in range(self.num_decoders)])
 
     def forward(self, x):
-        x = self.tokenizer.encode(x)
-        x = x + self.pad_token_id * (self.max_len - len(x))
-        x = torch.tensor(x).unsqueeze(0)
+        x = self.tokenizer.encode_batch(x)
+        x = [t+self.pad_token_id*(self.max_len-len(t)) for t in x]
+        # x = x + self.pad_token_id * (self.max_len - len(x))
+        # x = torch.tensor(x).unsqueeze(0)
+        x = torch.tensor(x)
         x = self.embedding_layer(x)
         x = self.positional_encoder(x)
         x = self.decoder_blocks[0](x)
